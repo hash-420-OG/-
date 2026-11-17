@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>סימולטור מבחן הגנת פרוייקט</title>
+    
+    <!-- הגדרת האייקון של האפליקציה בדפדפן ובמסכי הבית -->
+    <link rel="icon" type="image/png" href="app-icon.png">
+    <link rel="apple-touch-icon" href="app-icon.png">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .answer-btn { transition: all 0.2s ease-in-out; }
+        .answer-btn.selected { background-color: #3b82f6; color: white; border-color: #2563eb; }
+        .fade-in { animation: fadeIn 0.3s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 min-h-screen">
+
+    <!-- מסך פתיחה -->
+    <div id="start-screen" class="flex flex-col items-center justify-center min-h-screen fade-in p-4">
+        <div class="bg-white p-10 rounded-2xl shadow-xl max-w-2xl text-center border-t-8 border-blue-600">
+            <!-- הצגת האייקון ששמרת במסך הפתיחה -->
+            <img src="app-icon.png" alt="לוגו האפליקציה" class="w-32 h-32 mx-auto mb-6 rounded-2xl shadow-md border-2 border-blue-100 object-cover">
+            
+            <h1 class="text-4xl font-bold mb-6 text-gray-900">סימולטור מבחן הגנת פרוייקט</h1>
+            <p class="text-lg text-gray-600 mb-8 leading-relaxed">
+                המבחן כולל 50 שאלות אקראיות מתוך חומר הלימוד. סדר התשובות מעורבב בכל פעם.<br>
+                רק בסיום תוכל להגיש את המבחן ולראות את התוצאות, הציון והתשובות הנכונות.
+            </p>
+            <button onclick="startExam()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-12 rounded-lg text-xl shadow-lg transition duration-200 transform hover:scale-105 cursor-pointer z-10 relative">
+                התחל מבחן עכשיו
+            </button>
+        </div>
+    </div>
+
+    <!-- מסך המבחן -->
+    <div id="exam-screen" class="hidden flex-col min-h-screen fade-in">
+        <!-- סרגל כלים עליון -->
+        <div class="bg-white shadow-md p-4 sticky top-0 z-20">
+            <div class="max-w-4xl mx-auto flex flex-wrap justify-between items-center gap-4">
+                <div class="flex items-center gap-3">
+                    <img src="app-icon.png" alt="לוגו" class="w-8 h-8 rounded shadow-sm object-cover">
+                    <div class="font-semibold text-lg bg-blue-100 text-blue-800 px-4 py-2 rounded-lg">
+                        שאלה <span id="current-q-num">1</span> מתוך 50
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="confirmSubmit()" class="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-lg font-medium shadow transition cursor-pointer">הגש מבחן</button>
+                    <button onclick="confirmRestartSame()" class="bg-yellow-500 hover:bg-yellow-600 text-white px-5 py-2 rounded-lg font-medium shadow transition cursor-pointer">התחל מחדש</button>
+                    <button onclick="confirmRefresh()" class="bg-purple-600 hover:bg-purple-700 text-white px-5 py-2 rounded-lg font-medium shadow transition cursor-pointer">רענון שאלות</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- אזור השאלה -->
+        <div class="flex-grow flex items-center justify-center p-4">
+            <div class="bg-white p-8 rounded-2xl shadow-lg max-w-4xl w-full">
+                <h2 id="question-text" class="text-2xl font-bold mb-8 text-gray-800 leading-snug">טוען שאלה...</h2>
+                <div id="answers-container" class="space-y-4 mb-8">
+                    <!-- תשובות יוזרקו לכאן דינמית -->
+                </div>
+                <div class="flex justify-between mt-8 border-t pt-6">
+                    <button onclick="prevQuestion()" id="prev-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-6 py-3 rounded-lg font-medium transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">הקודמת</button>
+                    <button onclick="nextQuestion()" id="next-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition cursor-pointer">הבאה</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- מסך תוצאות -->
+    <div id="result-screen" class="hidden flex-col items-center justify-start min-h-screen fade-in p-4 py-10">
+        <div class="bg-white p-8 rounded-2xl shadow-xl max-w-4xl w-full">
+            <div class="text-center mb-10">
+                <img src="app-icon.png" alt="לוגו האפליקציה" class="w-24 h-24 mx-auto mb-4 rounded-xl shadow-md object-cover">
+                <h1 class="text-4xl font-bold mb-4 text-gray-900">תוצאות המבחן</h1>
+                <div class="inline-block bg-gray-100 rounded-full px-8 py-4">
+                    <span class="text-2xl text-gray-600">הציון שלך: </span>
+                    <span id="final-score" class="text-5xl font-black text-blue-600">0</span>
+                    <span class="text-2xl text-gray-600">/100</span>
+                </div>
+            </div>
+            
+            <div class="flex justify-center gap-4 mb-10">
+                <button onclick="restartSameExam()" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-3 px-8 rounded-lg shadow transition cursor-pointer">נסה שוב את אותן השאלות</button>
+                <button onclick="refreshExam()" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-8 rounded-lg shadow transition cursor-pointer">הגרל 50 שאלות חדשות</button>
+            </div>
+
+            <div id="review-container" class="space-y-6">
+                <!-- פירוט תוצאות יוזרק לכאן דינמית -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ... (שאר קוד ה-JavaScript נשאר זהה לחלוטין לקוד הקודם) ...
+        const fullDatabase = [
+            { q: "למה משפרים cos φ?", c: "כדי להקטין הפסדי הספק בקווים ולהקטין צריכת הספק ראקטיבי, עמידה בדרישת חח\"י ל-0.92.", w: ["כדי להגדיל את הזרם במוליכים ולשפר את עוצמת השדה המגנטי.", "כדי למנוע תופעת סטרובוסקופית בתאורה.", "על מנת לאפשר חיבור שנאים במקביל למתח גבוה."] },
+            { q: "כיצד עובד בקר cos φ?", c: "בודק את הזווית בין המתח והזרם ונותן פקודה לחיבור או ניתוק קבוצות קבלים.", w: ["משנה את תדר הרשת בהתאם לעומס המנועים.", "מנתק את הזרם במקרה של התחשמלות.", "מוריד את רמת המתח כדי לחסוך בהספק אקטיבי."] },
+            { q: "מה ההבדל בין שיפור cos בודד, קבוצתי ומרכזי?", c: "בודד לצרכן ספציפי, קבוצתי למספר צרכנים עם cos ממוצע, ומרכזי לכלל המתקנים מול רשת חברת החשמל.", w: ["בודד עובד על מתח נמוך, קבוצתי על מתח גבוה, ומרכזי על מתח עליון.", "אין הבדל, כולם משפרים את ההספק בדיוק באותה צורה אקטיבית.", "בודד משתמש בנגדים, קבוצתי בסלילים, ומרכזי בקבלים."] },
+            { q: "מדוע מחברים קבלים במשולש?", c: "מטעמי חיסכון: בחיבור כוכב נדרש קבל עם קיבולת פי 3 יותר גדולה מאשר במשולש לאותו הספק.", w: ["בגלל שכך הם מוגנים טוב יותר בפני זרמי קצר.", "כדי למנוע את פריצת הבידוד של הקבל.", "כי חיבור כוכב גורם לתהודה מסוכנת ברשת."] },
+            { q: "מהי סלקטיביות?", c: "הבטחה שזרם התקלה יופסק קרוב למקום התקלה מבלי להפסיק עומס אחר שאינו קשור.", w: ["היכולת של מפסק לזהות זרם זולג לאדמה ולנתק אותו.", "בחירת הכבלים הנכונים לפי שיטת ההתקנה.", "ניתוק כלל המערכת באופן מיידי כדי למנוע שריפה."] },
+            { q: "מהו מקדם ביקוש?", c: "מקדם המאפשר לחשב צריכה ממוצעת של לוח חשמלי המזין מספר צרכנים.", w: ["היחס בין הספק אקטיבי להספק ראקטיבי.", "אחוז זרם הקצר שנופל על קו ההזנה.", "מקדם שלוקח בחשבון את התחממות הכבלים בסביבה סגורה."] },
+            { q: "כיצד מגיע האפס ללוח הראשי?", c: "מנקודת הכוכב בצד המשני של השנאי.", w: ["מפס השוואת הפוטנציאלים באדמה.", "דרך מוליך ההארקה של חברת החשמל.", "מנוצר באופן מלאכותי בלוח עצמו על ידי בקר."] },
+            { q: "מה המשמעות של קבוצת חיבורים 11-DY?", c: "ראשוני במשולש, משני בכוכב, והפרש המופע בין המתחים לפי השעה 11 הוא 330 מעלות.", w: ["ראשוני בכוכב, משני במשולש, והפרש המופע הוא 110 מעלות.", "שנאי בעל 11 יציאות להזנת צרכנים חד פאזיים.", "חיבור המאפשר סנכרון של 11 שנאים במקביל."] },
+            { q: "מדוע חשוב לבחור בידוד עמיד בחום לכבלים?", c: "כי מעבר לחום שהכבל פולט, תנאי הסביבה עשויים לגרום לחום מצטבר שבזמן קצר יגרום לפריצת הבידוד.", w: ["כדי להקטין את ההתנגדות של המוליך כשהוא מתקרר.", "כדי למנוע מחיות מכרסמות לפגוע בכבל.", "מכיוון שבידוד חם מקטין את זרם הזליגה לאפס."] },
+            { q: "על פי חוק החשמל, היכן יש למקם שקע כוח?", c: "קרוב למתקן המוזן, כשהוא מוגן על ידי נתיך וחתך תילים המתאים לעומס כולל זרם התנעה.", w: ["במרחק של לפחות 5 מטרים מלוח החשמל הראשי.", "מחוץ למבנה כדי למנוע התלקחות במקרה קצר.", "בצמוד לתקרת החדר כדי למנוע נגיעה של ילדים."] },
+            { q: "כיצד מופעל קונטקטור (מגען)?", c: "על ידי פיקוד חשמלי או אלקטרוני בהתאם ללוגיקה (למשל ע\"י בקרים).", w: ["באופן ידני בלבד בעזרת ידית הפעלה מכנית.", "על ידי שדה מגנטי שנוצר עקב תקלות הארקה.", "בעזרת לחץ אוויר דחוס במערכות פניאומטיות."] },
+            { q: "מה תפקידו של משנה זרם?", c: "לשנות רמת זרם נקוב גבוה לזרם קטן כדי לאפשר מדידה או הפעלת ממסרי הגנה.", w: ["להפוך זרם חילופין (AC) לזרם ישר (DC).", "להגדיל את הזרם במעגלים בהם יש עומס יתר.", "לווסת את התדר של מנועים המופעלים מרחוק."] },
+            { q: "כיצד אמפרמטר מחובר לעומס ומדוע?", c: "בטור, בכדי שדרכו יזרום הזרם הנמדד.", w: ["במקביל, כדי למדוד את מפל המתח על הצרכן.", "בכוכב, כדי שיוכל לקזז הרמוניות.", "באמצעות הארקה בלבד, לשם בטיחות."] },
+            { q: "כיצד מחליפים אמפרמטר ברשת פעילה?", c: "מקצרים את הדקי משנה הזרם, מנתקים ומחליפים את האמפרמטר, ולבסוף משחררים את הקצר.", w: ["מנתקים את האפס בלבד ומחליפים את המכשיר.", "מחברים אמפרמטר שני במקביל לראשון ואז מנתקים.", "חובה לנתק את כל הלוח מהחשמל כדי להחליף מטר מדידה."] },
+            { q: "מדוע מחשבים זרם קצר במערכת?", c: "כדי לקבוע את כושר הניתוק הנדרש של המפסק המגן על המוליכים והציוד.", w: ["כדי לחשב את חשבון החשמל החודשי.", "על מנת לקבוע את כמות הנורות המקסימלית בלוח.", "בדיקת איכות הבידוד בין מוליך האפס לאדמה."] },
+            { q: "כיצד ניתן להקטין זרם קצר?", c: "על ידי הגדלת עכבת הקצר בעזרת הוספת סליל או נגד למעגל.", w: ["על ידי הקטנת שטח החתך של כבלי ההזנה.", "על ידי חיבור קבלים במשולש בלוח הראשי.", "על ידי ביטול מוליך הארקה במערכת."] },
+            { q: "מהו זרם הלם?", c: "הערך המירבי של זרם הקצר, המופיע כעבור חצי מחזור מרגע התקלה ומשמש לקביעת עמידות דינמית.", w: ["הזרם שזורם במוליך האפס בזמן שימוש שגרתי.", "זרם הזליגה שגורם להפעלת ממסר הפחת.", "זרם ההתנעה ההתחלתי של מנוע תלת פאזי."] },
+            { q: "מה ההבדל בין הגנה מגנטית להגנה תרמית?", c: "מגנטית מגנה מפני זרמי קצר (ניתוק מהיר), ותרמית מגנה מפני זרמי יתר (ניתוק תלוי זיהוי חום).", w: ["תרמית עובדת רק במתח גבוה ומגנטית רק במתח נמוך.", "מגנטית מגנה מפני זרם דלף ותרמית מפני התחשמלות.", "אין הבדל, שתי ההגנות פועלות בדיוק באותו אופן וזמן."] },
+            { q: "מהו זרם יתר?", c: "זרם העולה מסיבה כלשהי מעל הזרם הנומינלי במעגל.", w: ["הזרם שזורם תמיד במוליך ההארקה.", "זרם העבודה הרגיל שנמדד במונה של חברת חשמל.", "זרם הנוצר כתוצאה מניתוק פאזה אחת בשנאי."] },
+            { q: "מהו ההבדל בין זרם נומינלי לזרם עבודה?", c: "נומינלי הוא הזרם המחושב המותר לעבודה ממושכת, וזרם עבודה הוא הזרם שנצרך בפועל.", w: ["זרם עבודה גדול תמיד פי 3 מזרם נומינלי.", "נומינלי נמדד בוולטים וזרם עבודה באמפרים.", "זרם נומינלי קיים רק בשנאים וזרם עבודה רק במנועים."] },
+            { q: "למה מחשבים זרם קצר תלת פאזי כדי לבחור אמצעי הגנה?", c: "מכיוון שהוא הזרם החזק ביותר ולפיו קובעים את כושר הניתוק של המפסק.", w: ["כי זרם תלת פאזי הוא היחיד שזורם לאדמה.", "כי הוא מבטל את ההשפעה של זרם ההלם.", "מכיוון שרק מפסק תלת פאזי יכול לבצע סלקטיביות."] },
+            { q: "מהו המשמעות של התנאי Iz > 1.12 In?", c: "זהו התנאי לחישוב עמידות של מא\"ז (מפסק אוטומטי זעיר).", w: ["זהו תנאי לבחירת קוטר מוליך הארקה.", "תנאי להתנעת מנוע בחיבור משולש.", "תנאי לכיול ממסר פחת תעשייתי."] },
+            { q: "לאיזה צורך מבצעים חישוב של מפלי מתח?", c: "בכדי לעמוד בתנאי חוק החשמל למפל מתח מירבי של 3% ולהקטין בזבוזי הספק.", w: ["כדי לדעת איזה צבע כבל מתאים להתקנה.", "לצורך כיוון תדר הרשת ל-50 הרץ.", "בכדי להתאים את התאורה לדרישות של אפקט אופטי."] },
+            { q: "איזה הגנות מותקנות על שנאי?", c: "נתיכים למתח גבוה ונמוך, שסתום לחץ נגד התפוצצות, ונשם סיליקג'ל.", w: ["רק ממסר פחת ומפסק תרמי פשוט.", "מערכת התנעה רכה ובקר תדר.", "קבלים לשיפור cos ומגן ברקים בלבד."] },
+            { q: "מהו כושר ניתוק של מבטח?", c: "הזרם המירבי שהמבטח מסוגל לנתק מבלי לגרום סכנה לסביבה או להינזק בעצמו.", w: ["הזמן שלוקח למבטח להתחבר מחדש אחרי תקלה.", "ההספק הראקטיבי שהמפסק מסוגל לספוג.", "היכולת לנתק תדרים גבוהים שמגיעים מהרשת."] },
+            { q: "מה ההבדל העיקרי בין נתיך למבטח (מאמ\"ת)?", c: "נתיך נשרף בתקלה וחובה להחליפו, בעוד שמבטח מתנתק אוטומטית וניתן להחזירו לפעולה ע\"י הרמת ידית.", w: ["נתיך מותקן רק בזרם ישר (DC) ומבטח בזרם חילופין (AC).", "נתיך אינו עומד בזרמי קצר, רק בזרמי עומס יתר.", "אין הבדל, אלו שני שמות לאותו רכיב בדיוק."] },
+            { q: "מהי עוצמת הארה ואיך היא נבדקת?", c: "כמות האור הרצויה בנקודה מסוימת, נבדקת בחישוב או ע\"י מד לוקסים.", w: ["אורך הגל של הצבע, נמדד בננומטר.", "ההספק הנצרך ע\"י המנורה, נמדד בוואט.", "כמות החום שהנורה פולטת, נמדדת במעלות קלווין."] },
+            { q: "מהו הייחוד בתכנון תאורה לרשת מזון?", c: "נדרשת תאורה עם אפקט צבע שלא משנה את צבע המזון ושאינה פולטת חום למוצרים.", w: ["חובה להשתמש אך ורק בתאורת נתרן בלחץ גבוה.", "יש להתקין תאורה המהבהבת בתדירות גבוהה כדי למשוך קונים.", "התאורה חייבת להיות בחיבור כוכב-משולש בלבד."] },
+            { q: "מה תפקידו של משנק בתוך מנורת פריקה?", c: "לייצר מתח גבוה להפעלה ראשונית ולהגביל את הזרם הזורם בתוך הנורה.", w: ["לקרר את הנורה ולמנוע שריפה של הפלסטיק.", "למנוע חדירת לחות ורטיבות אל תוך הנורה.", "להפוך זרם חילופין לזרם ישר הדרוש לנורה."] },
+            { q: "מהי התופעה הסטרובוסקופית?", c: "אשליה אופטית בה אובייקט מסתובב נראה ללא תנועה עקב כיבוי והדלקת נורת פריקה בתדירות הרשת.", w: ["התחממות של כבל האפס כתוצאה מהרמוניות גבוהות מתאורה.", "הופעת הבזקי אור כחולים בזמן קצר חשמלי.", "תופעה שבה הקבל של הסטרטר נשרף עקב זרם התנעה."] },
+            { q: "מדוע מתקינים ממסר פחת (מגן נגד התחשמלות)?", c: "להגן בפני חשמול על ידי השוואת זרמים בין פאזה לאפס וניתוק כשיש זרם דלף.", w: ["כדי למנוע זרם קצר תלת פאזי בלוח המרכזי.", "על מנת לשפר את מקדם ההספק של המנועים בדירה.", "כדי להוריד את מתח הרשת מ-230V ל-12V בסביבת מים."] },
+            { q: "מהי לולאת התקלה?", c: "מסלול זרם התקלה ממקור הזינה, דרך המוליכים, הארקות והאדמה, בחזרה להארקת השיטה של המקור.", w: ["הלולאה התכנותית במערכת ה-PLC השולטת על הקונטקטור.", "החיווט הפנימי של מנוע תלת פאזי בתוך רוטור מלופף.", "תופעה בה הזרם חוזר מהצרכן דרך האפס וגורם לקצר."] },
+            { q: "מהי הארקת שיטה?", c: "חיבור של מוליך האפס (נקודת הכוכב בשנאי) למסת האדמה.", w: ["חיבור גופי המתכת של המכשיר הביתי להארקה.", "איפוס הפוטנציאלים בין התקרה לרצפה.", "חיבור פאזה אחת לאדמה בכדי להקטין מתח."] },
+            { q: "מהי הארקת איפוס?", c: "חיבור של מוליך הארקה ומוליך האפס של רשת הזינה יחד בכניסה למבנה.", w: ["ניתוק מוליך הארקה במקרה של תקלה בממסר הפחת.", "חיבור של שני מוליכי פאזות כדי לאפס את המתח בניהם.", "חיבור מוליך ההארקה ישירות אל פסי הצבירה."] },
+            { q: "כיצד פועלת שיטת הגנה 'הפרד מגן' (שנאי מבדל)?", c: "יצירת לולאת תקלה בעלת עכבה גדולה מאוד כך שזרם התקלה שואף לאפס, ואסור לחבר אליה מוליך הארקה.", w: ["חיבור ישיר של מתח נמוך מאוד דרך קבל גדול.", "הגנה המתבססת על ממסר פחת ברגישות של 10mA בלבד.", "הפרדת הפאזות בלוח בעזרת נגדים בהספק גבוה."] },
+            { q: "מהי זינה צפה והיכן נהוג להשתמש בה?", c: "הגנה ללא הארקת שיטה המחייבת שימוש במשגוח בידוד; נפוצה בחדרי ניתוח ובחדרי מחשבים.", w: ["הזנת מתקן חקלאי ממקור סולארי בלבד ללא חיבור לרשת.", "הזנה ניידת הנמצאת על רכבים צבאיים או ספינות בלבד.", "חיבור צרכנים ביתיים דרך נגדי הספק להפחתת מתח."] },
+            { q: "מדוע מעדיפים לעיתים להתניע מנוע בחיבור כוכב-משולש?", c: "כיוון שזרם ההתנעה בכוכב קטן פי 3 מזרם ההתנעה במשולש, וכך נמנעות הפרעות ברשת.", w: ["כי חיבור כוכב מגדיל את מומנט ההתנעה פי 3.", "מכיוון שרק חיבור כוכב מאפשר למנוע לעבוד לאחור.", "משום שזו הדרך היחידה לחבר מנוע ללא מוליך אפס."] },
+            { q: "מה זה 'התנעה רכה' למנוע?", c: "התנעת מנוע בזרם ומתח נמוכים באופן אלקטרוני, ומעבר הדרגתי לזרם נומינלי למניעת הלם מכני וחשמלי.", w: ["התנעה ידנית בעזרת מנואלה לפני הפעלת המתח.", "חיבור המנוע לרשת באמצעות מגען פשוט ללא הגנות.", "התנעת מנוע ללא עומס מכני עליו כלל."] },
+            { q: "מה הייחוד במנועים של מערכות מיזוג אוויר?", c: "עובדים לסירוגין בהתאם לוויסות טמפרטורה, לחצים, ותרמוסטט/בקר מתוכנת.", w: ["מופעלים אך ורק על ידי מתח ישר (DC).", "אינם צריכים הגנת עומס יתר כי הם מקררים את עצמם.", "מסתובבים תמיד באותה מהירות קבועה ללא הפסקה."] },
+            { q: "מהם כוחות התהודה המסוכנים ביותר בפסי צבירה?", c: "כוחות המתפתחים בתדרים השווים לתדר הרשת ומכפלתו (למשל סביב 50 הרץ או 100 הרץ).", w: ["כוחות הנוצרים רק כאשר מחברים שנאים במקביל.", "תדרים גבוהים מאד מעל 5000 הרץ הנוצרים מקבלים.", "תהודה מגנטית הנוצרת על ידי חיכוך האוויר בלוח."] },
+            { q: "מהם הפסדי נחושת והפסדי ברזל בשנאים?", c: "הפסדי נחושת הם משתנים ותלויים בעומס (התחממות מוליכים), והפסדי ברזל הם קבועים (זרמי מערבולת בליבה).", w: ["הפסדי נחושת הם קבועים תמיד, והפסדי ברזל משתנים לפי הזרם.", "הפסדי נחושת נובעים מהארקה, והפסדי ברזל מהאפס.", "אין הבדל ביניהם, שניהם נגרמים מהתחממות שמן השנאי."] },
+            { q: "מהם התנאים ההכרחיים לחיבור שנאים במקביל?", c: "מתחים נקובים שווים, שייכות לאותה קבוצת חיבורים (זווית מופע), ומתחי קצר שווים.", w: ["אותו משקל בדיוק ומיקום גיאוגרפי זהה.", "יצרן זהה ושימוש באותו סוג של נשם סיליקג'ל.", "גודל הספק שונה ביניהם כדי שאחד יהיה גיבוי לשני."] },
+            { q: "כיצד מחברים את נוריות החיווי בלוח ולמה?", c: "בחיבור כוכב לאפס, כדי שאם אחת הנורות תישרף (נתק), השאר ימשיכו לדלוק (חלש יותר) ועדיין יתנו חיווי.", w: ["במשולש, כדי לקבל מתח מקסימלי ותאורה חזקה.", "בטור בלבד, כדי לחסוך בצריכת זרם.", "מחברים אותן דרך ממסר פחת נפרד כדי למנוע קצר."] },
+            { q: "האם מתקינים הגנות על משנה זרם (שנאי זרם)?", c: "לא. אסור לבצע נתק במשנה זרם כי הוא יישרף. בזמן החלפה יש לקצר את הדקיו.", w: ["כן, שמים נתיכים גדולים כדי להגן עליו מקצרים.", "כן, מתקינים עליו ממסר תרמי למניעת חימום יתר.", "שמים הגנה רק אם הוא מותקן באוויר הפתוח."] },
+            { q: "מהו עקרון הפעולה של סליל פטרסון?", c: "קיזוז זרם קיבולי בזמן הופעת קצר חד פאזי לאדמה על ידי יצירת זרם השראי נגדי.", w: ["הגברת הזרם לצרכנים מרוחקים כדי למנוע מפל מתח.", "שיפור אקטיבי של מקדם ההספק בצרכנים ביתיים.", "יצירת זרם חלופי במקרה של הפסקת חשמל מתחנת כוח."] },
+            { q: "מהי הגנה דיפרנציאלית?", c: "הגנה המבוססת על השוואת זרמים (סכום הנכנסים מול היוצאים) להגנה על ציוד (כמו שנאי) מפני תקלות פנימיות.", w: ["הגנה המודדת את חום הכבלים לאורך הקו כולו.", "הגנה המזהה קצרים מרוחקים מאד ברשת מתח עליון.", "הגנה שמותקנת רק במעליות לעצירת חירום."] },
+            { q: "מהם התנאים הנדרשים לסנכרון גנרטור או רשת?", c: "שוויון במתח, שוויון בתדר הרשת, ושוויון בזווית המופע בין המתחים.", w: ["סוג דלק זהה, עוצמת רעש דומה, ואותו זרם עבודה.", "טמפרטורת סביבה זהה והספק אקטיבי זהה בלבד.", "עכבת קצר זהה וזרם הלם דומה."] },
+            { q: "מהם השלבים העיקריים בתכנון מערכת בקרה?", c: "הגדרת דרישות המערכת, הגדרת כניסות/יציאות, וכתיבת דיאגרמות סולם (Ladder Logic).", w: ["יציקת הארקת יסוד, חיבור קבלים, וכיוון ממסר תרמי.", "הזמנת ציוד, חיבור ישיר למנוע, ובדיקת כיוון סיבוב.", "מדידת מתח קצר, חישוב מפל מתח, ושרטוט הלוח."] },
+            { q: "מהו התנאי לכיול נתיך להגנה על כבל?", c: "יש להתאים את הנתיך לזרם המירבי שמותר להעביר בכבל בהתחשב בסוג הבידוד ושיטת ההתקנה.", w: ["יש לבחור נתיך תמיד הגדול פי 2 מהזרם של המנוע.", "הנתיך חייב להיות בכושר ניתוק אפסי כדי למנוע נזק.", "הנתיך צריך להיות קטן מהזרם העבודה הרגיל."] },
+            { q: "מה מייצג מתח הקצר (Uka%) של שנאי?", c: "את מפל המתח (באחוזים ממתח הרשת) הנופל על העכבה הפנימית של השנאי בזמן שזורם בו זרם נומינלי בקצר.", w: ["את אחוז הספק הברזל ביחס למתח הכניסה.", "את סטיית התקן של מתח הרשת לאורך היממה.", "את הזרם הנדרש לפריצת שמן השנאי."] }
+        ];
+
+        let selectedQuestions = [];
+        let currentQuestionIndex = 0;
+        let userAnswers = [];
+        
+        function shuffle(array) {
+            let currentIndex = array.length, randomIndex;
+            while (currentIndex !== 0) {
+                randomIndex = Math.floor(Math.random() * currentIndex);
+                currentIndex--;
+                [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+            }
+            return array;
+        }
+
+        function startExam() {
+            let shuffledDb = shuffle([...fullDatabase]);
+            selectedQuestions = shuffledDb.slice(0, 50);
+            userAnswers = new Array(selectedQuestions.length).fill(null);
+            currentQuestionIndex = 0;
+            
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('result-screen').classList.add('hidden');
+            document.getElementById('exam-screen').classList.remove('hidden');
+            document.getElementById('exam-screen').classList.add('flex');
+            
+            renderQuestion();
+        }
+
+        function renderQuestion() {
+            const qData = selectedQuestions[currentQuestionIndex];
+            document.getElementById('current-q-num').innerText = (currentQuestionIndex + 1);
+            document.getElementById('question-text').innerText = qData.q;
+            
+            const answersContainer = document.getElementById('answers-container');
+            answersContainer.innerHTML = '';
+            
+            let options = [qData.c, ...qData.w];
+            options = shuffle(options);
+            
+            options.forEach((opt) => {
+                const btn = document.createElement('button');
+                btn.className = `answer-btn w-full text-right p-4 rounded-xl border-2 border-gray-200 bg-gray-50 hover:bg-gray-100 text-gray-700 font-medium text-lg cursor-pointer`;
+                if (userAnswers[currentQuestionIndex] === opt) {
+                    btn.classList.add('selected');
+                }
+                btn.innerText = opt;
+                btn.onclick = () => selectAnswer(opt);
+                answersContainer.appendChild(btn);
+            });
+
+            document.getElementById('prev-btn').disabled = currentQuestionIndex === 0;
+            document.getElementById('next-btn').innerText = (currentQuestionIndex === selectedQuestions.length - 1) ? 'סיים והגש' : 'הבאה';
+        }
+
+        function selectAnswer(answerText) {
+            userAnswers[currentQuestionIndex] = answerText;
+            renderQuestion();
+        }
+
+        function nextQuestion() {
+            if (currentQuestionIndex < selectedQuestions.length - 1) {
+                currentQuestionIndex++;
+                renderQuestion();
+            } else {
+                confirmSubmit();
+            }
+        }
+
+        function prevQuestion() {
+            if (currentQuestionIndex > 0) {
+                currentQuestionIndex--;
+                renderQuestion();
+            }
+        }
+
+        function confirmSubmit() {
+            const unanswered = userAnswers.filter(a => a === null).length;
+            if (unanswered > 0) {
+                if(!confirm(`נותרו לך ${unanswered} שאלות ללא מענה. האם אתה בטוח שברצונך להגיש?`)) return;
+            }
+            showResults();
+        }
+
+        function confirmRestartSame() {
+            if(confirm("זה יאפס את כל התשובות שלך ויתחיל את המבחן מחדש עם אותן 50 שאלות. להמשיך?")) {
+                restartSameExam();
+            }
+        }
+
+        function confirmRefresh() {
+            if(confirm("זה יאפס את המבחן ויגריל מאגר חדש לחלוטין של שאלות. להמשיך?")) {
+                refreshExam();
+            }
+        }
+
+        function restartSameExam() {
+            userAnswers = new Array(selectedQuestions.length).fill(null);
+            currentQuestionIndex = 0;
+            
+            document.getElementById('result-screen').classList.add('hidden');
+            document.getElementById('exam-screen').classList.remove('hidden');
+            document.getElementById('exam-screen').classList.add('flex');
+            
+            renderQuestion();
+            window.scrollTo(0,0);
+        }
+
+        function refreshExam() {
+            startExam();
+            window.scrollTo(0,0);
+        }
+
+        function showResults() {
+            document.getElementById('exam-screen').classList.remove('flex');
+            document.getElementById('exam-screen').classList.add('hidden');
+            document.getElementById('result-screen').classList.remove('hidden');
+            document.getElementById('result-screen').classList.add('flex');
+            
+            let correctCount = 0;
+            const reviewContainer = document.getElementById('review-container');
+            reviewContainer.innerHTML = '';
+            
+            selectedQuestions.forEach((qData, index) => {
+                const isCorrect = userAnswers[index] === qData.c;
+                if (isCorrect) correctCount++;
+                
+                const box = document.createElement('div');
+                box.className = `p-6 rounded-xl border-l-8 ${isCorrect ? 'bg-green-50 border-green-500' : 'bg-red-50 border-red-500'} shadow-sm`;
+                
+                let content = `
+                    <h3 class="font-bold text-lg mb-3 text-gray-800">שאלה ${index + 1}: ${qData.q}</h3>
+                    <div class="space-y-2">
+                        <p class="text-gray-700"><strong>התשובה שלך:</strong> <span class="${isCorrect ? 'text-green-700 font-semibold' : 'text-red-700 line-through'}">${userAnswers[index] || 'לא סומנה תשובה'}</span></p>
+                `;
+                
+                if (!isCorrect) {
+                    content += `<p class="text-gray-700"><strong>התשובה הנכונה:</strong> <span class="text-green-700 font-semibold">${qData.c}</span></p>`;
+                }
+                
+                content += `</div>`;
+                box.innerHTML = content;
+                reviewContainer.appendChild(box);
+            });
+            
+            const score = Math.round((correctCount / selectedQuestions.length) * 100);
+            const scoreEl = document.getElementById('final-score');
+            scoreEl.innerText = score;
+            
+            scoreEl.className = `text-5xl font-black ${score >= 80 ? 'text-green-600' : score >= 60 ? 'text-yellow-500' : 'text-red-600'}`;
+            window.scrollTo(0,0);
+        }
+    </script>
+</body>
+</html>
